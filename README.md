@@ -1,3 +1,4 @@
+
 # myproject-customer-service-python
 <br/>
 
@@ -198,34 +199,111 @@ $ docker push 707538076348.dkr.ecr.ap-southeast-1.amazonaws.com/myproject-custom
 $ aws ecr describe-images --repository-name myproject-customer-service
 ```
 
-## Run and Test Locally
+## Run and Test Locally (docker-compose)
+
+#### Prerequisites
+Make sure `FLASK_ENV` in  `flaskr/.flaskenv ` file is set to development:
+```
+FLASK_ENV=development
+```
+
+#### Step 1: Build and run application locally with docker compose
+To test the application locally, you must first build the program. To do this, first make sure your docker daemon is running. Once running, you can build the application by issuing the ff command: 
+```
+$ docker-compose build
+```
+Once it is done building, you may now run the app using the ff command:
 ```
 $ docker-compose up
 ```
 ```
-version: '3'
-services:
-  # https://github.com/aws-samples/aws-sam-java-rest/issues/1
-  dynamo-db:
-    image: amazon/dynamodb-local
-    ports:
-      - '8000:8000'
-    volumes:
-      - dynamodb_data:/home/dynamodblocal
-    working_dir: /home/dynamodblocal
-    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ."
-
-  api:
-    build: .
-    volumes:
-      - ./flaskr:/flaskr
-    ports:
-      - '5000:5000'
-    links: 
-      - dynamo-db
-volumes:
-  dynamodb_data:
+Starting myproject-customer-service-python_dynamo-db_1 ... done
+Starting myproject-customer-service-python_api_1       ... done
+Attaching to myproject-customer-service-python_dynamo-db_1, myproject-customer-service-python_api_1
+dynamo-db_1  | Initializing DynamoDB Local with the following configuration:
+dynamo-db_1  | Port:  8000
+dynamo-db_1  | InMemory:  false
+dynamo-db_1  | DbPath:  .
+dynamo-db_1  | SharedDb:  true
+dynamo-db_1  | shouldDelayTransientStatuses:  false
+dynamo-db_1  | CorsParams:  *
+dynamo-db_1  |
+api_1        | [INFO][customer_routes] 2020-05-09 10:22:02:MainThread:20:Intialized customer routes
+api_1        | failed to get ec2 instance metadata.
+api_1        |  * Serving Flask app "__init__" (lazy loading)
+api_1        |  * Environment: development
+api_1        |  * Debug mode: on
+api_1        |  * Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)
+api_1        |  * Restarting with stat
+api_1        | [INFO][customer_routes] 2020-05-09 10:22:04:MainThread:20:Intialized customer routes
+api_1        |  * Debugger is active!
+api_1        |  * Debugger PIN: 388-367-770
 ```
+
+This will create 2 containers: 
+- dynamo-db (refers to the database)
+- api (refers to your flask app)
+
+#### Step 2: Set up dynamo-db local schema and test data
+Now that you have the two containers running, you can check their status. I a new terminal window, and run the ff command: 
+```
+$ docker ps
+```
+```
+CONTAINER ID        IMAGE                                   COMMAND                  CREATED             STATUS              PORTS                    NAMES
+2331e5eb978d        myproject-customer-service-python_api   "python app.py"          22 minutes ago      Up 5 minutes        0.0.0.0:5000->5000/tcp   myproject-customer-service-python_api_1
+42ed2f522ebe        amazon/dynamodb-local                   "java -jar DynamoDBL…"   3 weeks ago         Up 5 minutes        0.0.0.0:8000->8000/tcp   myproject-customer-service-python_dynamo-db_1
+```
+You should be seeing 2 running containers:
+- myproject-customer-service-python_api_1
+- myproject-customer-service-python_dynamo-db_1
+
+You are now ready to set up the dynamo-db local table. In the same terminal window, run the ff command: 
+```
+ aws dynamodb create-table \
+--cli-input-json file://~/environment/setup/customers-table-schema.json \
+--endpoint-url http://localhost:8000
+```
+This will create the needed tables in the local dynamodb-db container. 
+
+Once done, you may load data into the dynamo-db table. In the same terminal window run the ff command:
+```
+$ aws dynamodb batch-write-item --request-items file://~/enviroment/setup/load_customers.json --endpoint-url http://localhost:8000
+```
+
+This will load the dummy data coming from `load_customers.json` into the dynamod-db container. 
+
+To check if the data was loaded correctly run the ff command: 
+```
+# Use to scan existing tables
+$ aws dynamodb scan --table-name customers --endpoint-url http://localhost:8000
+```
+
+#### Step 3: Tear down
+Once you are done with development, make sure to remove and stop the provisioned containers. You can do this by running the ff command:
+```
+$ docker-compose down
+```
+```
+Stopping myproject-customer-service-python_api_1       ... done
+Stopping myproject-customer-service-python_dynamo-db_1 ... done
+Removing myproject-customer-service-python_api_1       ... done
+Removing myproject-customer-service-python_dynamo-db_1 ... done
+Removing network myproject-customer-service-python_default
+```
+
+In cases where you must reset the set up for dynamo-db local. You must delete the volume associated to it. To do so, run the ff commands: 
+
+```
+$ docker volume ls
+local               myproject-customer-service-python_dynamodb_data
+```
+
+Remove dynamodb_data for customer-service-python
+```
+$ docker volume rm myproject-customer-service-python_dynamodb_data
+```
+
 
 ## Change Database to DynamoDB on AWS
 

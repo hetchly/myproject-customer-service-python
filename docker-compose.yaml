@@ -1,0 +1,22 @@
+version: '3'
+services:
+  # https://github.com/aws-samples/aws-sam-java-rest/issues/1
+  dynamo-db:
+    image: amazon/dynamodb-local
+    ports:
+      - '8000:8000'
+    volumes:
+      - dynamodb_data:/home/dynamodblocal
+    working_dir: /home/dynamodblocal
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ."
+
+  api:
+    build: .
+    volumes:
+      - ./flaskr:/flaskr
+    ports:
+      - '5000:5000'
+    links: 
+      - dynamo-db
+volumes:
+  dynamodb_data:
