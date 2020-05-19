@@ -21,7 +21,7 @@ spec:
         app: myproject-customer-service
     spec:
       containers:
-      - image: 222337787619.dkr.ecr.ap-southeast-2.amazonaws.com/myproject-customer-service:latest
+      - image: 222337787619.dkr.ecr.ap-southeast-2.amazonaws.com/myproject-customer-service:1589170889
         imagePullPolicy: Always
         name: myproject-customer-service
         ports:
