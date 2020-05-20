@@ -261,14 +261,14 @@ You should be seeing 2 running containers:
 You are now ready to set up the dynamo-db local table. In the same terminal window, run the ff command: 
 ```
  aws dynamodb create-table \
---cli-input-json file://~/environment/setup/customers-table-schema.json \
+--cli-input-json file://~/environment/startup/customer-table-schema.json \
 --endpoint-url http://localhost:8000
 ```
 This will create the needed tables in the local dynamodb-db container. 
 
 Once done, you may load data into the dynamo-db table. In the same terminal window run the ff command:
 ```
-$ aws dynamodb batch-write-item --request-items file://~/enviroment/setup/load_customers.json --endpoint-url http://localhost:8000
+$ aws dynamodb batch-write-item --request-items file://~/enviroment/startup/load_customers.json --endpoint-url http://localhost:8000
 ```
 
 This will load the dummy data coming from `load_customers.json` into the dynamod-db container. 
