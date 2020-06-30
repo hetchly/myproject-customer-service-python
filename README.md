@@ -80,7 +80,7 @@ $ docker run -p 8000:8000 amazon/dynamodb-local
 - Create Local DynamoDB Table
 ```
 $ aws dynamodb create-table \
---cli-input-json file://~/environment/customers-table-schema.json \
+--cli-input-json file://customers-table-schema.json \
 --endpoint-url http://localhost:8000 
 ```
 ```
@@ -122,6 +122,16 @@ $ aws dynamodb create-table \
   ]
 }
 ```
+- Populate Table
+```
+aws dynamodb batch-write-item \
+--request-items file://customers.json --endpoint-url http://localhost:8000
+```
+- Scan Table
+```
+$ aws dynamodb scan --table-name customers --endpoint-url http://localhost:8000
+```
+- Update db.py by uncommenting "endpoint" line
 
 ## Development
 - You may also copy everything from Github repo to CodeCommit repo
