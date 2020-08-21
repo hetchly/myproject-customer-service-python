@@ -183,28 +183,19 @@ def update_customer(customerId, customer_dict):
 			Key={
 				'customerId': customerId
 			},
-			UpdateExpression="""SET firstName = :p_firstName,
-									lastName = :p_lastName,
-									email = :p_email,
-									userName = :p_userName,
-									birthDate = :p_birthDate,
-									gender = :p_gender,
-									phoneNumber = :p_phoneNumber,
-									updatedDate = :p_updatedDate,
-									profilePhotoUrl = :p_profilePhotoUrl,
-									#attrName.address_1 = :p_address_1,
-									#attrName.address_2 = :p_address_2,
-									#attrName.city = :p_city,
-									#attrName.state = :p_state,
-									#attrName.country = :p_country,
-									#attrName.zipcode = :p_zipcode,
-									""",
-			ConditionExpression="customerId = :p_customerId",
+			UpdateExpression="""set firstName = :p_firstName,
+								lastName = :p_lastName,
+								email = :p_email,
+								userName = :p_userName,
+								birthDate = :p_birthDate,
+								gender = :p_gender,
+								phoneNumber = :p_phoneNumber,
+								updatedDate = :p_updatedDate,
+								profilePhotoUrl = :p_profilePhotoUrl, #attrName = :attrValue""",
 			ExpressionAttributeNames = {
-            "#attrName" : "address"
+				"#attrName" : "address"
 			},
-			ExpressionAttributeValues={
-				':p_customerId' : customerId,
+			ExpressionAttributeValues = {
 				':p_firstName': firstName,
 				':p_lastName' : lastName,
 				':p_email':  email,
@@ -214,42 +205,17 @@ def update_customer(customerId, customer_dict):
 				':p_phoneNumber': phoneNumber,
 				':p_updatedDate':  updatedDate,
 				':p_profilePhotoUrl':  profilePhotoUrl,
-				':p_address_1': address_1,
-				':p_address_2': address_2,
-				':p_city': city,
-				':p_state': state,
-				':p_country': country,
-				':p_zipcode': zipcode,
+				':attrValue': {
+					'address_1': address_1,
+					'address_2': address_2,
+					'city': city,
+					'state': state,
+					'country': country,
+					'zipcode': zipcode
+				}
 			},
 			ReturnValues="ALL_NEW"
-		)
-	
-	except ClientError as e:
-		if e.response['Error']['Code'] == 'ValidationException':
-			""" Creating new top level attribute `address` (with nested props) 
-      if the previous query failed """
-			response = table.update_item(
-				Key={
-					'customerId': customerId
-				},
-				UpdateExpression="set #attrName = :attrValue",
-				ExpressionAttributeNames = {
-					"#attrName" : "address"
-				},
-				ExpressionAttributeValues = {
-					':attrValue': {
-						'address_1': address_1,
-						'address_2': address_2,
-						'city': city,
-						'state': state,
-						'country': country,
-						'zipcode': zipcode
-					}
-				},
-				ReturnValues="ALL_NEW"
-      )
-		else:
-			raise  
+		)  
 
 	except Exception as e:
 		raise Exception("CustomerNotFound")
@@ -271,11 +237,6 @@ def update_customer(customerId, customer_dict):
 		'createdDate': updated['createdDate'],
 		'updatedDate': updated['updatedDate'],
 		'profilePhotoUrl': updated['profilePhotoUrl'],
-		address: {
-			'address_1': updated['address_1'],
-			'address_2': updated['address_2'],
-			'city': updated['city']
-		}
 	} """
 	
 	return json.dumps({'customer': updated_customer})
