@@ -32,8 +32,10 @@ def get_all_customers():
 	customer_list = defaultdict(list)
 
 	for item in response["Items"]:
+		# if 'address' in item.keys():
 		address = {}
-		if 'address' in item.keys():
+		value = item.get('address')
+		if bool(value):
 			address = {
 				'address_1' : item['address']['address_1'],
 				'address_2' : item['address']['address_2'],
@@ -77,7 +79,9 @@ def get_customer(customerId):
 	item = response['Item']
 
 	address = {}
-	if 'address' in item.keys():
+	value = item.get('address')
+	
+	if bool(value):
 		address = {
 			'address_1' : item['address']['address_1'],
 			'address_2' : item['address']['address_2'],
