@@ -42,7 +42,7 @@ def get_all_customers():
 				'country' : item['address']['country'],
 				'zipcode' : item['address']['zipcode'],
 			}
-			
+
 		customer = {
 			'customerId': item['customerId'],
 			'firstName': item['firstName'],
@@ -76,6 +76,17 @@ def get_customer(customerId):
 
 	item = response['Item']
 
+	address = {}
+	if 'address' in item.keys():
+		address = {
+			'address_1' : item['address']['address_1'],
+			'address_2' : item['address']['address_2'],
+			'city' : item['address']['city'],
+			'state' : item['address']['state'],
+			'country' : item['address']['country'],
+			'zipcode' : item['address']['zipcode'],
+		}
+
 	customer = {
 		'customerId': item['customerId'],
 		'firstName': item['firstName'],
@@ -88,6 +99,7 @@ def get_customer(customerId):
 		'createdDate': item['createdDate'],
 		'updatedDate': item['updatedDate'],
 		'profilePhotoUrl': item['profilePhotoUrl'],
+		'address': address
 	}
 	return json.dumps({'customer': customer})
 
@@ -246,8 +258,6 @@ def update_customer(customerId, customer_dict):
 	logger.info(response) """
 
 	updated_customer = response['Attributes']
-	logger.info("updated Response: ")
-	logger.info(updated_customer)
 
 	""" customer = {
 		'customerId': updated['customerId'],
