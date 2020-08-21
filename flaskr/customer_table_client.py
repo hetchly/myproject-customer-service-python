@@ -9,6 +9,8 @@ import datetime
 from datetime import date
 
 from boto3.dynamodb.conditions import Key, Attr
+from botocore.exceptions import ClientError
+
 if __package__ is None or __package__ == '':
 	# uses current directory visibility
 	from custom_logger import setup_logger
@@ -27,11 +29,20 @@ def get_all_customers():
 	response = table.scan(
 			Select='ALL_ATTRIBUTES'
 	)
-	# logger.info("Logger Response: ")
-	# logger.info(response)    
 	customer_list = defaultdict(list)
 
 	for item in response["Items"]:
+		address = {}
+		if 'address' in item.keys():
+			address = {
+				'address_1' : item['address']['address_1'],
+				'address_2' : item['address']['address_2'],
+				'city' : item['address']['city'],
+				'state' : item['address']['state'],
+				'country' : item['address']['country'],
+				'zipcode' : item['address']['zipcode'],
+			}
+			
 		customer = {
 			'customerId': item['customerId'],
 			'firstName': item['firstName'],
@@ -44,6 +55,7 @@ def get_all_customers():
 			'createdDate': item['createdDate'],
 			'updatedDate': item['updatedDate'],
 			'profilePhotoUrl': item['profilePhotoUrl'],
+			'address': address
 		}
 		customer_list["customers"].append(customer)
 	return json.dumps(customer_list)
@@ -133,6 +145,8 @@ def create_customer(customer_dict):
 		raise Exception('CustomerExists')
 
 def update_customer(customerId, customer_dict):
+	""" logger.info("Customer Dict Response: ")
+	logger.info(customer_dict) """
 	firstName = str(customer_dict['firstName'])
 	lastName = str(customer_dict['lastName'])
 	email = str(customer_dict['email'])
@@ -142,6 +156,12 @@ def update_customer(customerId, customer_dict):
 	phoneNumber = str(customer_dict['phoneNumber'])
 	updatedDate = str(datetime.datetime.now().isoformat())
 	profilePhotoUrl = str(customer_dict['profilePhotoUrl'])
+	address_1 = str(customer_dict['address1'])
+	address_2 = str(customer_dict['address2'])
+	city = str(customer_dict['city'])
+	state = str(customer_dict['region'])
+	country = str(customer_dict['country'])
+	zipcode = str(customer_dict['zipCode'])
 
 	dynamodb = get_db_resource()
 	table = dynamodb.Table(table_name)
@@ -159,10 +179,20 @@ def update_customer(customerId, customer_dict):
 									gender = :p_gender,
 									phoneNumber = :p_phoneNumber,
 									updatedDate = :p_updatedDate,
-									profilePhotoUrl = :p_profilePhotoUrl
+									profilePhotoUrl = :p_profilePhotoUrl,
+									#attrName.address_1 = :p_address_1,
+									#attrName.address_2 = :p_address_2,
+									#attrName.city = :p_city,
+									#attrName.state = :p_state,
+									#attrName.country = :p_country,
+									#attrName.zipcode = :p_zipcode,
 									""",
 			ConditionExpression="customerId = :p_customerId",
+			ExpressionAttributeNames = {
+            "#attrName" : "address"
+			},
 			ExpressionAttributeValues={
+				':p_customerId' : customerId,
 				':p_firstName': firstName,
 				':p_lastName' : lastName,
 				':p_email':  email,
@@ -172,19 +202,54 @@ def update_customer(customerId, customer_dict):
 				':p_phoneNumber': phoneNumber,
 				':p_updatedDate':  updatedDate,
 				':p_profilePhotoUrl':  profilePhotoUrl,
-				':p_customerId' : customerId
+				':p_address_1': address_1,
+				':p_address_2': address_2,
+				':p_city': city,
+				':p_state': state,
+				':p_country': country,
+				':p_zipcode': zipcode,
 			},
 			ReturnValues="ALL_NEW"
 		)
+	
+	except ClientError as e:
+		if e.response['Error']['Code'] == 'ValidationException':
+			""" Creating new top level attribute `address` (with nested props) 
+      if the previous query failed """
+			response = table.update_item(
+				Key={
+					'customerId': customerId
+				},
+				UpdateExpression="set #attrName = :attrValue",
+				ExpressionAttributeNames = {
+					"#attrName" : "address"
+				},
+				ExpressionAttributeValues = {
+					':attrValue': {
+						'address_1': address_1,
+						'address_2': address_2,
+						'city': city,
+						'state': state,
+						'country': country,
+						'zipcode': zipcode
+					}
+				},
+				ReturnValues="ALL_NEW"
+      )
+		else:
+			raise  
 
 	except Exception as e:
 		raise Exception("CustomerNotFound")
 
-	logger.info("Logger Response: ")
-	logger.info(response)
+	""" logger.info("Logger Response: ")
+	logger.info(response) """
 
-	updated = response['Attributes']
-	customer = {
+	updated_customer = response['Attributes']
+	logger.info("updated Response: ")
+	logger.info(updated_customer)
+
+	""" customer = {
 		'customerId': updated['customerId'],
 		'firstName': updated['firstName'],
 		'lastName': updated['lastName'],
@@ -196,8 +261,14 @@ def update_customer(customerId, customer_dict):
 		'createdDate': updated['createdDate'],
 		'updatedDate': updated['updatedDate'],
 		'profilePhotoUrl': updated['profilePhotoUrl'],
-	}
-	return json.dumps({'customer': customer})
+		address: {
+			'address_1': updated['address_1'],
+			'address_2': updated['address_2'],
+			'city': updated['city']
+		}
+	} """
+	
+	return json.dumps({'customer': updated_customer})
 
 def delete_customer(customerId):
 	dynamodb = get_db_resource()
