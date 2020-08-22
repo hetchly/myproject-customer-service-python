@@ -119,3 +119,30 @@ def customer_already_exists(e):
     resp = Response(errorResponse, 405)
     resp.headers["Content-Type"] = "application/json"
     return resp
+
+# GET ALL UPLOADED Files
+@customer_module.route('/customers/images')
+def get_all_images():
+    try:
+        service_response = customer_table_client.get_all_images()
+    except Exception as e:
+        logger.error(e)
+        abort(400)
+    resp = Response(service_response)
+    resp.headers["Content-Type"] = "application/json"
+    return resp
+
+# UPLOAD A File
+@customer_module.route('/customers/upload', methods=['POST'])
+def upload_to_aws():
+    try:
+        file_content=request.files['file']
+        service_response = customer_table_client.upload_to_aws(file_content)
+    except Exception as e:
+        if 'CustomerNotFound' in e.args:
+            abort(404)
+        else:
+            abort(400)
+    resp = Response(service_response, 200)
+    resp.headers["Content-Type"] = "application/json"
+    return resp

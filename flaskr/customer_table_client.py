@@ -1,3 +1,4 @@
+import os
 import boto3
 import json
 import logging
@@ -10,6 +11,10 @@ from datetime import date
 
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
+
+S3_BUCKET_URL = os.environ.get("S3_BUCKET_URL")
+S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME")
+UPLOAD_FOLDER = "uploads"
 
 if __package__ is None or __package__ == '':
 	# uses current directory visibility
@@ -331,3 +336,27 @@ def customer_number_generator():
 	else: 
 		new_card_number = '623633' + str(now.year) + str(now.month).zfill(2) + str(now.day).zfill(2) + '00001'
 	return new_card_number """
+
+def get_all_images():
+	s3 = boto3.resource('s3')
+	my_bucket = s3.Bucket('react-customer-images')
+
+	# Output the bucket names
+	bucket_list = defaultdict(list)
+	for my_bucket_object in my_bucket.objects.all():
+		item = {
+			"name": 'https://' + S3_BUCKET_NAME + '.' + S3_BUCKET_URL + '/' + my_bucket_object.key
+		}
+		bucket_list["items"].append(item)
+
+	return json.dumps(bucket_list)
+
+def upload_to_aws(file):
+	try:
+		s3_resource = boto3.resource('s3')
+		bucket = s3_resource.Bucket(S3_BUCKET_NAME)
+		response = bucket.Object(file.filename).put(Body=file.read());
+	except ClientError as e:
+		logging.error(e)
+		return False
+	return True
